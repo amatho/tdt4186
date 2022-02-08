@@ -41,8 +41,18 @@ void schedule(alarmlist_t *alarmlist) {
     } else if (pid == 0) {
         unsigned int df = (unsigned int)difftime(alarm_time, time(NULL));
         sleep(df);
-        printf("\a");
-        exit(EXIT_SUCCESS);
+
+#if __APPLE__
+        char *mp_player = "afplay";
+#elif __linux__
+        char *mp_player = "mpg123";
+#else
+#error "Unsupported system"
+#endif
+
+        execlp(mp_player, mp_player, "-t", "20", "ringtone.mp3", NULL);
+
+        _exit(EXIT_FAILURE);
     } else {
         alarm_t alarm = {.time = alarm_time, .pid = pid};
         alarmlist->size += 1;
@@ -62,17 +72,24 @@ void list(alarmlist_t alarmlist) {
 
 void cancel(alarmlist_t *alarmlist) {
     if (alarmlist->size == 0) {
-        printf("There are no alarms.");
+        printf("There are no alarms.\n");
         return;
     }
 
     unsigned long index;
     do {
-        printf("Cancel which alarm? (There are %lu alarms)\n> ",
-               alarmlist->size);
+        printf("Cancel which alarm? (Press 'x' to cancel 'cancel')\n");
+        list(*alarmlist);
+
         char input[8];
+        printf("> ");
         fgets(input, 8, stdin);
         strip_newline(input);
+
+        if (strcmp(input, "x") == 0) {
+            return;
+        }
+
         index = strtoul(input, NULL, 10) - 1;
     } while (index >= alarmlist->size);
 
@@ -83,18 +100,29 @@ void cancel(alarmlist_t *alarmlist) {
 }
 
 int main() {
-    printf("\a");
     time_t current_time = time(NULL);
     alarmlist_t alarmlist = {.alarms = NULL, .size = 0};
-    printf("Welcome to the alarm clock! It is currently %s\nPlease enter 's' "
-           "(schedule), 'l' (list), 'c' (cancel), 'x' (exit)\n",
+    printf("Welcome to the alarm clock! It is currently %s\n",
            ctime(&current_time));
 
     char input[32];
+    input[0] = '\0';
     while (strcmp(input, "x") != 0) {
+        printf("\nPlease enter 's' (schedule), 'l' (list), 'c' (cancel), 'x' "
+               "(exit)\n");
+
         printf("> ");
         fgets(input, 32, stdin);
         strip_newline(input);
+        printf("\n");
+
+        // Detect zombies and remove the alarms from the list
+        for (int i = 0; i < alarmlist.size; i++) {
+            if (waitpid(alarmlist.alarms[i].pid, NULL, WNOHANG) > 0) {
+                alarmlist.alarms[i] = alarmlist.alarms[alarmlist.size - 1];
+                alarmlist.size -= 1;
+            }
+        }
 
         if (strcmp(input, "s") == 0) {
             schedule(&alarmlist);
@@ -110,6 +138,8 @@ int main() {
                    input);
         }
     }
+
+    free(alarmlist.alarms);
 
     return 0;
 }
