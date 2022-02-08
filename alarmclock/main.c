@@ -1,3 +1,6 @@
+#define _XOPEN_SOURCE
+
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,16 +8,19 @@
 #include <time.h>
 #include <unistd.h>
 
+// A single alarm
 typedef struct {
     time_t time;
     pid_t pid;
 } alarm_t;
 
+// A simple list data structure for the alarms
 typedef struct {
     alarm_t *alarms;
     uintptr_t size;
 } alarmlist_t;
 
+// Strips the trailing newline of a string, if there is one
 void strip_newline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n') {
@@ -22,10 +28,12 @@ void strip_newline(char *str) {
     }
 }
 
+// Schedules an alarm based on user input
 void schedule(alarmlist_t *alarmlist) {
     char input[32];
     struct tm date;
 
+    // Ask for new input until valid input is given
     do {
         printf("Schedule alarm at which date and time? ");
         fgets(input, 32, stdin);
@@ -34,11 +42,13 @@ void schedule(alarmlist_t *alarmlist) {
 
     time_t alarm_time = mktime(&date);
 
+    // Creates a child process
     pid_t pid = fork();
     if (pid == -1) {
         fprintf(stderr, "Could not spawn a child process");
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
+        // Child process waits the given amount of time before ringing
         unsigned int df = (unsigned int)difftime(alarm_time, time(NULL));
         sleep(df);
 
@@ -54,6 +64,7 @@ void schedule(alarmlist_t *alarmlist) {
 
         _exit(EXIT_FAILURE);
     } else {
+        // In the parent process, add the alarm to the list
         alarm_t alarm = {.time = alarm_time, .pid = pid};
         alarmlist->size += 1;
         alarmlist->alarms =
@@ -62,14 +73,22 @@ void schedule(alarmlist_t *alarmlist) {
     }
 }
 
+// Lists the scheduled alarms
 void list(alarmlist_t alarmlist) {
+    if (alarmlist.size == 0) {
+        printf("There are no alarms.\n");
+        return;
+    }
+
     printf("Alarms:\n");
+
     for (int i = 0; i < alarmlist.size; i++) {
         alarm_t a = alarmlist.alarms[i];
         printf("- Alarm %d: %s", i + 1, ctime(&a.time));
     }
 }
 
+// Cancels a scheduled alarm
 void cancel(alarmlist_t *alarmlist) {
     if (alarmlist->size == 0) {
         printf("There are no alarms.\n");
@@ -77,6 +96,8 @@ void cancel(alarmlist_t *alarmlist) {
     }
 
     unsigned long index;
+
+    // Ask for new input until valid input is given
     do {
         printf("Cancel which alarm? (Press 'x' to cancel 'cancel')\n");
         list(*alarmlist);
@@ -93,8 +114,12 @@ void cancel(alarmlist_t *alarmlist) {
         index = strtoul(input, NULL, 10) - 1;
     } while (index >= alarmlist->size);
 
+    // Kill the child process for the alarm
     kill(alarmlist->alarms[index].pid, SIGKILL);
 
+    // Remove the alarm from the list.
+    // This is done by overwriting the alarm to be deleted with the last alarm
+    // in the list, and shrinking the list size
     alarmlist->alarms[index] = alarmlist->alarms[alarmlist->size - 1];
     alarmlist->size -= 1;
 }

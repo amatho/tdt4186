@@ -1,0 +1,31 @@
+Test case 1: Create alarm with wrong date, delete it 
+
+ - What do you do: Press "s" to schedule alarm with valid date, eg. "2022-12-12 12:12:12". 
+ Press "c" the cancel an alarm. Enter the index of the alarm, eg 1. Schedule a new alarm by as 
+ described.
+ - What does the test do: The test checks if the functionality for scheduling and canceling an 
+ alarm works correctly. 
+ - Expected result: The first alarm is deleted and only the last alarm is active and shown in the 
+ alarm list. 
+
+Test case 2: Main menu
+
+- What do you do: Type both valid and invalid commands.
+- What does the test do: The test checks if it is possible to enter invalid commands in the main menu. 
+- Expected result: The program will ask again for a new command if the given command is invalid.
+
+Test case 3: Date parsing
+
+- What do you do: Press 's' to schedule an alarm. Enter an invalid date and time, e.g.
+"2022-123-12 12:34:56".
+- What does the test do: The test checks if the date parsing will reject an invalid format.
+- Expected result: The program will ask again for a date and time for the alarm.
+
+Test case 4: Alarm is scheduled, rings and the correndsponding child process is killed
+
+- What do you do: Press 's' to schedule an alarm. Enter a valid date and time 10s from the current 
+time. Wait 10s for alarm to ring. Press 'l' to confirm the alarm is removed from the schedule. Use 
+ps(1) to check for zombies.
+- What does the test do: The test checks if the correct alarm is scheduled, removed from the alarm list, music 
+is played and if the correndsponding child process is killed. 
+- Expected result: The alarm will be removed from the schedule and the correndsponding child process is killed.
