@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -53,14 +54,12 @@ void schedule(alarmlist_t *alarmlist) {
         sleep(df);
 
 #if __APPLE__
-        char *mp_player = "afplay";
+        execlp("afplay", "afplay", "-t", "20", "ringtone.mp3", NULL);
 #elif __linux__
-        char *mp_player = "mpg123";
+        execlp("mpg123", "mpg123", "-q", "-n", "775", "ringtone.mp3", NULL);
 #else
 #error "Unsupported system"
 #endif
-
-        execlp(mp_player, mp_player, "-t", "20", "ringtone.mp3", NULL);
 
         _exit(EXIT_FAILURE);
     } else {
