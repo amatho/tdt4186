@@ -53,19 +53,25 @@ static void *handle_request(void *worker_state) {
             handle_error("could not read request");
         }
 
-        printf("Request: '%s'\n", req_buf);
         char *req = req_buf;
-        char *req_type = strsep(&req, " ");
+        char *req_line = strsep(&req, "\r\n");
+        printf("Request Line: '%s'\n", req_line);
+        char *req_method = strsep(&req_line, " ");
 
-        if (strncmp("GET", req_type, 3) != 0) {
+        if (strncmp("GET", req_method, 3) != 0) {
             char *response = "<html>Bad request</html>\r\n";
             if (write(conn_socket, response, strlen(response)) == -1) {
                 handle_error("could not write response");
             }
         }
 
-        char *file_path = strsep(&req, " \r\n");
+        char *file_path = strsep(&req_line, " \r\n");
         strsep(&file_path, "/");
+
+        if (file_path[0] == '\0') {
+            file_path = "index.html";
+        }
+
         printf("File path: '%s'\n", file_path);
 
         int file_fd = openat(ws->serve_dir, file_path, O_RDONLY);
@@ -129,7 +135,7 @@ int main(int argc, char *argv[]) { /*program name, www_path, port_number, number
                                    .sin_port = __builtin_bswap16(port),
                                    .sin_addr = addr};
 
-    if (bind(sfd, &sockaddr, sizeof(sockaddr)) == -1) {
+    if (bind(sfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) == -1) {
         handle_error("bind");
     }
 
@@ -140,7 +146,8 @@ int main(int argc, char *argv[]) { /*program name, www_path, port_number, number
     while (1) {
         struct sockaddr_in peer_addr; /*address for client */
         socklen_t peer_addrlen;
-        int conn_socket = accept(sfd, &peer_addr, &peer_addrlen);
+        int conn_socket =
+            accept(sfd, (struct sockaddr *)&peer_addr, &peer_addrlen);
 
         if (conn_socket == -1) {
             handle_error("could not accept TCP connection");
