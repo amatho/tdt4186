@@ -1,0 +1,12 @@
+This security problem can be exploited by writing '../' in the request, moving upwards in the directory 
+heirarchy from the webroot directory, or by passing the absoulute path, starting with '//'.
+
+The first solution to this problem is input sanitizing. By removing leading '/', and removing
+strings of '../' in the request path, the input is sanitized and can be safely used to open files.
+This is the solution we have implemented in our source code.
+
+Another way to prevent access to files outside the webroot directory is to use the chroot Unix command,
+which changes the apparent root directory for the current running process and its children. A program 
+that is run in this modified environment cannot access files utside the designated directory tree.
+
+:)

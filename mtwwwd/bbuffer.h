@@ -16,15 +16,7 @@
 /* Opaque type of a Bounded Buffer.
  * ...you need to figure out the contents of struct BNDBUF yourself
  */
-typedef struct BNDBUF {
-    int *buffer;
-    size_t capacity;
-    ptrdiff_t head;
-    ptrdiff_t tail;
-    SEM *size;
-    SEM *free;
-    pthread_mutex_t mutex;
-} BNDBUF;
+typedef struct BNDBUF BNDBUF;
 
 /* Creates a new Bounded Buffer.
  *

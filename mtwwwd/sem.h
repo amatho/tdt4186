@@ -14,11 +14,7 @@
 /* Opaque type of a semaphore.
  * ...you need to figure out the contents of struct SEM yourself!
  */
-typedef struct SEM {
-    unsigned int counter;
-    pthread_mutex_t counter_lock;
-    pthread_cond_t counter_nonzero;
-} SEM;
+typedef struct SEM SEM;
 
 /* Creates a new semaphore.
  *

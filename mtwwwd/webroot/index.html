@@ -1,51 +1,61 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <style>
-            body {
-                background-color: #000000;
-            }
+  <head>
+    <style>
+      body {
+        background-color: #000000;
+      }
 
-            @keyframes example {
-                0%   {background-color: red;}
-                25%  {background-color: yellow;}
-                50%  {background-color: blue;}
-                100% {background-color: green;}
-            }
+      @keyframes example {
+        0% {
+          background-color: red;
+        }
 
-            .button {
-                background-color: #deb887;
-                color: #000000;
-                border: 2px solid #000000;
-                border-radius: 50%;
-                font-size: 32px;
-                padding: 20px;
-                width: 50vh;
-                height: 50vh;
-                
-            }
+        25% {
+          background-color: yellow;
+        }
 
-            .button:active {
-                background-color: rgb(120, 85, 39);
-            }
+        50% {
+          background-color: blue;
+        }
 
-            .button:hover {
-                border-color: #ffffff;
-                animation-name: example;
-                animation-duration: 3s;
-                animation-delay: 0s;
-            }
-        </style>
-    </head>
-    <body>
-        <button id="1" class="button" onclick="foo()">hello jupiter</button>
-    
-        <script>
-            const foo = (evt) => {
-               // alert("hello jupiter");
-                document.getElementById("1").style = "background"
-                
-            };
-        </script>
-    </body>
+        100% {
+          background-color: green;
+        }
+      }
+
+      .button {
+        background-color: #deb887;
+        color: #000000;
+        border: 2px solid #000000;
+        border-radius: 50%;
+        font-size: 32px;
+        padding: 20px;
+        width: 50vh;
+        height: 50vh;
+      }
+
+      .button:active {
+        background-color: rgb(120, 85, 39);
+      }
+
+      .button:hover {
+        border-color: #ffffff;
+        animation-name: example;
+        animation-duration: 3s;
+        animation-delay: 0s;
+      }
+    </style>
+  </head>
+
+  <body>
+    <button id="1" class="button" onclick="foo()">hello jupiter</button>
+
+    <script>
+      const foo = (evt) => {
+        // alert("hello jupiter");
+        document.getElementById("1").style = "background";
+      };
+    </script>
+  </body>
 </html>
