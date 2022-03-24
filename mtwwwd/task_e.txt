@@ -1,5 +1,6 @@
-This security problem can be exploited by writing '../' in the request, moving upwards in the directory 
-heirarchy from the webroot directory, or by passing the absoulute path, starting with '//'.
+This security problem can be exploited in our implementation by writing '../' in the request, moving
+upwards in the directory heirarchy from the webroot directory, or by passing the absoulute path,
+starting with '//' (an extra forward slash, since HTTP paths always begin with a forward slash).
 
 The first solution to this problem is input sanitizing. By removing leading '/', and removing
 strings of '../' in the request path, the input is sanitized and can be safely used to open files.
