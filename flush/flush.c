@@ -1,3 +1,4 @@
+#include "command.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,7 @@ int main(int argc, char *argv[]) {
     while (running) {
         char *cwd = getcwd(NULL, 0);
 
-        printf("%s: ", cwd);
+        printf("\n%s: ", cwd);
 
         char *input = NULL;
         size_t bufsize;
@@ -19,10 +20,17 @@ int main(int argc, char *argv[]) {
             input[num_read - 1] = '\0';
         }
 
-        printf("%s\n", input);
+        command_t cmd = flush_command_parse(input);
 
-        if (strcmp(input, "exit") == 0) {
-            running = 0;
+        // printf("%s\n", cmd.name);
+        // for (int i = 1; cmd.arguments[i] != NULL; i++) {
+        //     printf("arg: '%s'\n", cmd.arguments[i]);
+        // }
+
+        pid_t pid = flush_command_execute(cmd);
+        if (pid > 0) {
+            int cmd_status = 0;
+            waitpid(pid, &cmd_status, 0);
         }
 
         free(cwd);
@@ -30,4 +38,4 @@ int main(int argc, char *argv[]) {
     }
 
     return 0;
-}
+    }

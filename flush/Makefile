@@ -3,11 +3,12 @@
 CC = gcc
 
 SRCS := $(wildcard *.c)
+OBJS := $(SRCS:.c=.o)
 
 all: flush
 
-%: %.o
-	${CC} $< -o $@
+flush: $(OBJS)
+	${CC} $^ -o $@
 
 %.o: %.c
 	$(CC) -c $< -o $@
