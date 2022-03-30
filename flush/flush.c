@@ -6,15 +6,27 @@
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
-    bool running = 1;
-    while (running) {
-        char *cwd = getcwd(NULL, 0);
+    char *cwd = getcwd(NULL, 0);
 
+    while (1) {
         printf("\n%s: ", cwd);
+        fflush(stdout);
 
-        char *input = NULL;
-        size_t bufsize;
-        ssize_t num_read = getline(&input, &bufsize, stdin);
+        char input[1024];
+        input[1023] = '\0';
+        ssize_t num_read = read(STDIN_FILENO, input, 1023);
+
+        if (num_read == -1) {
+            perror("could not read from stdin");
+            exit(EXIT_FAILURE);
+        } else if (num_read == 0) {
+            break;
+        }
+
+        char *newline = strchr(input, '\n');
+        if (newline != NULL) {
+            *newline = '\0';
+        }
 
         if (input[num_read - 1] == '\n') {
             input[num_read - 1] = '\0';
@@ -28,14 +40,9 @@ int main(int argc, char *argv[]) {
         // }
 
         pid_t pid = flush_command_execute(cmd);
-        if (pid > 0) {
-            int cmd_status = 0;
-            waitpid(pid, &cmd_status, 0);
-        }
-
-        free(cwd);
-        free(input);
     }
+
+    free(cwd);
 
     return 0;
-    }
+}
