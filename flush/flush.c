@@ -1,3 +1,4 @@
+#include "colors.h"
 #include "command.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -7,9 +8,11 @@
 
 int main(int argc, char *argv[]) {
     char *cwd = getcwd(NULL, 0);
+    int last_cmd_res = 0;
 
     while (1) {
-        printf("\n%s: ", cwd);
+        char *color = last_cmd_res >= 0 ? FLUSH_GREEN : FLUSH_RED;
+        printf("\n%s%s%s:%s ", FLUSH_CYAN, cwd, color, FLUSH_WHITE);
         fflush(stdout);
 
         char input[1024];
@@ -34,12 +37,7 @@ int main(int argc, char *argv[]) {
 
         command_t cmd = flush_command_parse(input);
 
-        // printf("%s\n", cmd.name);
-        // for (int i = 1; cmd.arguments[i] != NULL; i++) {
-        //     printf("arg: '%s'\n", cmd.arguments[i]);
-        // }
-
-        pid_t pid = flush_command_execute(cmd);
+        last_cmd_res = flush_command_execute(cmd);
     }
 
     free(cwd);

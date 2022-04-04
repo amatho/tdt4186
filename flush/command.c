@@ -1,4 +1,5 @@
 #include "command.h"
+#include "colors.h"
 #include "gpvec.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -7,31 +8,20 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-static void strip_whitespace(char **str) {
-    while (**str == ' ' || **str == '\t') {
-        (*str)++;
-    }
-}
-
 command_t flush_command_parse(char *str) {
-    strip_whitespace(&str);
-    char *cmd_name = strsep(&str, " \t");
-    if (cmd_name == NULL) {
-        return (command_t){.name = NULL, .arguments = NULL};
-    }
-
     gpvec_t arguments;
     gpvec_init(&arguments, 4);
-    gpvec_push(&arguments, cmd_name);
 
-    while (str != NULL) {
-        strip_whitespace(&str);
-        char *arg = strsep(&str, " \t");
-
-        if (arg != NULL && arg[0] != '\0') {
-            gpvec_push(&arguments, arg);
+    char *arg;
+    while ((arg = strsep(&str, " \t")) != NULL) {
+        if (*arg == '\0') {
+            continue;
         }
+
+        gpvec_push(&arguments, arg);
     }
+
+    char *cmd_name = arguments.len > 0 ? arguments.buf[0] : NULL;
 
     command_t cmd = {.name = cmd_name, .arguments = arguments};
 
@@ -51,11 +41,15 @@ static void undo_redirect(FILE *restrict redir_out, FILE *restrict redir_in) {
 }
 
 pid_t flush_command_execute(command_t cmd) {
-    if (strcmp(cmd.name, "cd") == 0) {
+    pid_t exec_result;
+
+    if (cmd.name == NULL) {
+        exec_result = 0;
+    } else if (strcmp(cmd.name, "cd") == 0) {
         char *dir = gpvec_get(&cmd.arguments, 1);
         if (chdir(dir) == -1) {
             printf("cd: no such directory: %s\n", dir);
-            return -1;
+            exec_result = -1;
         }
     } else if (strcmp(cmd.name, "exit") == 0) {
         exit(EXIT_SUCCESS);
@@ -97,18 +91,20 @@ pid_t flush_command_execute(command_t cmd) {
         undo_redirect(redir_out, redir_in);
         if (is_background) {
             // TODO: Store background process
+            // exec_result = pid;
         } else {
             int cmd_status = 0;
             waitpid(pid, &cmd_status, 0);
-            printf("Exit status [%s] = %d\n", cmd.name,
-                   WEXITSTATUS(cmd_status));
+            char *color = cmd_status == 0 ? FLUSH_GREEN : FLUSH_RED;
+            printf("%sExit status [%s] = %d%s\n", color, cmd.name,
+                   WEXITSTATUS(cmd_status), FLUSH_WHITE);
+
+            exec_result = cmd_status == 0 ? 0 : -1;
         }
-
-        // Destroy the arguments vector
-        gpvec_destroy(&cmd.arguments);
-
-        return pid;
     }
 
-    return 0;
+    // Destroy the arguments vector
+    gpvec_destroy(&cmd.arguments);
+
+    return exec_result;
 }
