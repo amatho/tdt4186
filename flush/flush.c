@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-int main(int argc, char *argv[]) {
+int main(void) {
     char *cwd = getcwd(NULL, 0);
     int last_cmd_res = 0;
 

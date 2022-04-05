@@ -39,4 +39,4 @@
 
 // Generate generic vector implementations, specifying types and names
 // NOTE: Matching declarations must be generated in the header!
-GEN_VEC_IMPL(char *, str);
+GEN_VEC_IMPL(char *, str)

@@ -13,7 +13,11 @@ command_t flush_command_parse(char *str) {
     gvec_str_init(&arguments, 4);
 
     char *arg;
-    while ((arg = strsep(&str, " \t")) != NULL) {
+    if ((arg = strtok(str, " \t")) != NULL && *arg != '\0') {
+        gvec_str_push(&arguments, arg);
+    }
+
+    while ((arg = strtok(NULL, " \t")) != NULL) {
         if (*arg == '\0') {
             continue;
         }
