@@ -48,7 +48,7 @@ pid_t flush_command_execute(command_t cmd) {
     } else if (strcmp(cmd.name, "cd") == 0) {
         char *dir = gpvec_get(&cmd.arguments, 1);
         if (chdir(dir) == -1) {
-            printf("cd: no such directory: %s\n", dir);
+            fprintf(stderr, "cd: no such directory: %s\n", dir);
             exec_result = -1;
         }
     } else if (strcmp(cmd.name, "exit") == 0) {
@@ -83,7 +83,7 @@ pid_t flush_command_execute(command_t cmd) {
         pid_t pid = fork();
         if (pid == 0) {
             if (execvp(cmd.name, (char **)cmd.arguments.buf) == -1) {
-                fprintf(stderr, "could not execute command '%s'\n", cmd.name);
+                fprintf(stderr, "flush: command not found: %s\n", cmd.name);
                 exit(EXIT_FAILURE);
             }
         }

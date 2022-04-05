@@ -1,5 +1,6 @@
 #include "colors.h"
 #include "command.h"
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +21,8 @@ int main(int argc, char *argv[]) {
         ssize_t num_read = read(STDIN_FILENO, input, 1023);
 
         if (num_read == -1) {
-            perror("could not read from stdin");
+            fprintf(stderr, "flush: could not read from stdin (%s)\n",
+                    strerror(errno));
             exit(EXIT_FAILURE);
         } else if (num_read == 0) {
             break;
