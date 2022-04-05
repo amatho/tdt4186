@@ -75,10 +75,11 @@ pid_t flush_command_execute(command_t cmd) {
         bool is_background = 0;
         if (strcmp(cmd.arguments.buf[cmd.arguments.len - 1], "&") == 0) {
             is_background = 1;
+            cmd.arguments.buf[cmd.arguments.len - 1] = NULL;
+        } else if (redir_in == NULL && redir_out == NULL) {
+            // execvp expects a NULL-terminated array
+            gpvec_push(&cmd.arguments, NULL);
         }
-
-        // execvp expects a NULL-terminated array
-        gpvec_push(&cmd.arguments, NULL);
 
         pid_t pid = fork();
         if (pid == 0) {
@@ -90,8 +91,9 @@ pid_t flush_command_execute(command_t cmd) {
 
         undo_redirect(redir_out, redir_in);
         if (is_background) {
-            // TODO: Store background process
-            // exec_result = pid;
+            printf("flush: running %s with PID %d in background\n", cmd.name,
+                   pid);
+            exec_result = pid;
         } else {
             int cmd_status = 0;
             waitpid(pid, &cmd_status, 0);

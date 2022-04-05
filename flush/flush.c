@@ -12,6 +12,8 @@ int main(int argc, char *argv[]) {
     int last_cmd_res = 0;
 
     while (1) {
+        // TODO: Collect background processes that have terminated (zombies)
+
         char *color = last_cmd_res >= 0 ? FLUSH_GREEN : FLUSH_RED;
         printf("\n%s%s%s:%s ", FLUSH_CYAN, cwd, color, FLUSH_WHITE);
         fflush(stdout);
@@ -39,6 +41,7 @@ int main(int argc, char *argv[]) {
 
         command_t cmd = flush_command_parse(input);
 
+        // TODO: Store background process
         last_cmd_res = flush_command_execute(cmd);
     }
 
