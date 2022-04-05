@@ -1,10 +1,9 @@
-#include "gpvec.h"
-#include <stddef.h>
-#include <stdlib.h>
+#include "gvec.h"
+#include <sys/types.h>
 
 typedef struct {
     char *name;
-    gpvec_t arguments;
+    gvec_str_t arguments;
 } command_t;
 
 command_t flush_command_parse(char *);

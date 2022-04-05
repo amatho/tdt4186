@@ -1,6 +1,6 @@
 #include "command.h"
 #include "colors.h"
-#include "gpvec.h"
+#include "gvec.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,8 +9,8 @@
 #include <unistd.h>
 
 command_t flush_command_parse(char *str) {
-    gpvec_t arguments;
-    gpvec_init(&arguments, 4);
+    gvec_str_t arguments;
+    gvec_str_init(&arguments, 4);
 
     char *arg;
     while ((arg = strsep(&str, " \t")) != NULL) {
@@ -18,7 +18,7 @@ command_t flush_command_parse(char *str) {
             continue;
         }
 
-        gpvec_push(&arguments, arg);
+        gvec_str_push(&arguments, arg);
     }
 
     char *cmd_name = arguments.len > 0 ? arguments.buf[0] : NULL;
@@ -46,7 +46,7 @@ pid_t flush_command_execute(command_t cmd) {
     if (cmd.name == NULL) {
         exec_result = 0;
     } else if (strcmp(cmd.name, "cd") == 0) {
-        char *dir = gpvec_get(&cmd.arguments, 1);
+        char *dir = gvec_str_get(&cmd.arguments, 1);
         if (chdir(dir) == -1) {
             fprintf(stderr, "cd: no such directory: %s\n", dir);
             exec_result = -1;
@@ -78,7 +78,7 @@ pid_t flush_command_execute(command_t cmd) {
             cmd.arguments.buf[cmd.arguments.len - 1] = NULL;
         } else if (redir_in == NULL && redir_out == NULL) {
             // execvp expects a NULL-terminated array
-            gpvec_push(&cmd.arguments, NULL);
+            gvec_str_push(&cmd.arguments, NULL);
         }
 
         pid_t pid = fork();
@@ -106,7 +106,7 @@ pid_t flush_command_execute(command_t cmd) {
     }
 
     // Destroy the arguments vector
-    gpvec_destroy(&cmd.arguments);
+    gvec_str_destroy(&cmd.arguments);
 
     return exec_result;
 }
