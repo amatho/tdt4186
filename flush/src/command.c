@@ -8,21 +8,53 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+typedef enum {
+    TOKEN_NONE,
+    TOKEN_IDENT,
+    TOKEN_DQUOTE,
+    TOKEN_SQUOTE,
+} tokentype_t;
+
 command_t flush_command_parse(char *str) {
     gvec_str_t arguments;
     gvec_str_init(&arguments, 4);
 
-    char *arg;
-    if ((arg = strtok(str, " \t")) != NULL && *arg != '\0') {
-        gvec_str_push(&arguments, arg);
+    char *token_start = NULL;
+    tokentype_t token_type = TOKEN_NONE;
+    size_t str_buf_len = strlen(str) + 1;
+    for (size_t i = 0; i < str_buf_len; i++) {
+        char curr = str[i];
+
+        if (token_type == TOKEN_NONE) {
+            if (curr == '"') {
+                token_start = str + i + 1;
+                token_type = TOKEN_DQUOTE;
+            } else if (curr == '\'') {
+                token_start = str + i + 1;
+                token_type = TOKEN_SQUOTE;
+            } else if (curr != ' ' && curr != '\t') {
+                token_start = str + i;
+                token_type = TOKEN_IDENT;
+            } else if (curr == '\\') {
+                continue;
+            }
+        } else if ((token_type == TOKEN_DQUOTE || token_type == TOKEN_SQUOTE) &&
+                   curr == '\\') {
+            continue;
+        } else if ((token_type == TOKEN_DQUOTE && curr == '"') ||
+                   (token_type == TOKEN_SQUOTE && curr == '\'') ||
+                   (token_type == TOKEN_IDENT &&
+                    (curr == ' ' || curr == '\t' || curr == '\0'))) {
+            str[i] = '\0';
+            gvec_str_push(&arguments, token_start);
+            token_type = TOKEN_NONE;
+        }
     }
 
-    while ((arg = strtok(NULL, " \t")) != NULL) {
-        if (*arg == '\0') {
-            continue;
-        }
-
-        gvec_str_push(&arguments, arg);
+    if (token_type != TOKEN_NONE) {
+        fprintf(stderr,
+                "flush: %swarning: multi-line quotes are not supported%s\n",
+                FLUSH_RED, FLUSH_WHITE);
     }
 
     char *cmd_name = arguments.len > 0 ? arguments.buf[0] : NULL;
