@@ -3,17 +3,16 @@
 CC = gcc
 CFLAGS = -std=c11 -pedantic -Wall -Wextra -Wmissing-declarations
 
-SRCS := $(wildcard *.c)
-OBJS := $(SRCS:.c=.o)
+OBJS := $(patsubst src/%.c, build/%.o, $(wildcard src/*.c))
 
-all: flush
+all: build/flush
 
-flush: $(OBJS)
+build/flush: $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@
 
-%.o: %.c
+build/%.o: src/%.c
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -v *.o flush
-
+	rm -r build
