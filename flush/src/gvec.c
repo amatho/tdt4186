@@ -1,5 +1,4 @@
 #include "gvec.h"
-#include <stdlib.h>
 
 #define GEN_VEC_IMPL(T, N)                                                     \
     void gvec_##N##_init(gvec_##N##_t *vec, size_t capacity) {                 \
@@ -20,7 +19,7 @@
                                                                                \
     T gvec_##N##_pop(gvec_##N##_t *vec) {                                      \
         if (vec->len == 0) {                                                   \
-            return NULL;                                                       \
+            return (T){0};                                                     \
         }                                                                      \
                                                                                \
         vec->len--;                                                            \
@@ -29,7 +28,7 @@
                                                                                \
     T gvec_##N##_get(gvec_##N##_t *vec, size_t idx) {                          \
         if (idx >= vec->len) {                                                 \
-            return NULL;                                                       \
+            return (T){0};                                                     \
         }                                                                      \
                                                                                \
         return vec->buf[idx];                                                  \
@@ -40,3 +39,5 @@
 // Generate generic vector implementations, specifying types and names
 // NOTE: Matching declarations must be generated in the header!
 GEN_VEC_IMPL(char *, str)
+GEN_VEC_IMPL(gvec_str_t, strvec)
+GEN_VEC_IMPL(int, int)

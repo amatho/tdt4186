@@ -1,5 +1,5 @@
-#ifndef __COLORS_H
-#define __COLORS_H
+#ifndef _COLORS_H
+#define _COLORS_H
 
 #define FLUSH_RED "\033[0;31m"
 #define FLUSH_GREEN "\033[0;32m"

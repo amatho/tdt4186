@@ -1,7 +1,5 @@
 #include "command.h"
 #include "colors.h"
-#include "gvec.h"
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +14,7 @@ typedef enum {
 } tokentype_t;
 
 command_t flush_command_parse(char *str) {
-    gvec_str_t arguments;
+    gvec_str_t arguments = {0};
     gvec_str_init(&arguments, 4);
 
     char *token_start = NULL;
@@ -26,7 +24,9 @@ command_t flush_command_parse(char *str) {
         char curr = str[i];
 
         if (token_type == TOKEN_NONE) {
-            if (curr == '"') {
+            if (curr == '\0') {
+                break;
+            } else if (curr == '"') {
                 token_start = str + i + 1;
                 token_type = TOKEN_DQUOTE;
             } else if (curr == '\'') {
@@ -57,9 +57,14 @@ command_t flush_command_parse(char *str) {
                 FLUSH_RED, FLUSH_WHITE);
     }
 
-    char *cmd_name = arguments.len > 0 ? arguments.buf[0] : NULL;
-
-    command_t cmd = {.name = cmd_name, .arguments = arguments};
+    command_t cmd = {0};
+    if (arguments.len > 0) {
+        bool is_background =
+            strcmp(arguments.buf[arguments.len - 1], "&") == 0 ? 1 : 0;
+        cmd = (command_t){.name = arguments.buf[0],
+                          .arguments = arguments,
+                          .is_background = is_background};
+    }
 
     return cmd;
 }
@@ -76,19 +81,29 @@ static void undo_redirect(FILE *restrict redir_out, FILE *restrict redir_in) {
     }
 }
 
-pid_t flush_command_execute(command_t cmd) {
-    pid_t exec_result;
-
+pid_t flush_command_execute(command_t cmd, gvec_int_t *background_procs,
+                            gvec_strvec_t *proc_cmdlines) {
     if (cmd.name == NULL) {
-        exec_result = 0;
-    } else if (strcmp(cmd.name, "cd") == 0) {
+        return 0;
+    }
+
+    if (strcmp(cmd.name, "cd") == 0) {
         char *dir = gvec_str_get(&cmd.arguments, 1);
         if (chdir(dir) == -1) {
             fprintf(stderr, "cd: no such directory: %s\n", dir);
-            exec_result = -1;
+            return -1;
         }
     } else if (strcmp(cmd.name, "exit") == 0) {
         exit(EXIT_SUCCESS);
+    } else if (strcmp(cmd.name, "jobs") == 0) {
+        for (size_t i = 0; i < background_procs->len; i++) {
+            gvec_str_t cmdline = proc_cmdlines->buf[i];
+            printf("[%d] %s", background_procs->buf[i], cmdline.buf[0]);
+            for (size_t j = 1; j < cmdline.len; j++) {
+                printf(" %s", cmdline.buf[j]);
+            }
+            printf("\n");
+        }
     } else {
         FILE *redir_in = NULL;
         FILE *redir_out = NULL;
@@ -121,7 +136,7 @@ pid_t flush_command_execute(command_t cmd) {
         if (pid == 0) {
             if (execvp(cmd.name, (char **)cmd.arguments.buf) == -1) {
                 fprintf(stderr, "flush: command not found: %s\n", cmd.name);
-                exit(EXIT_FAILURE);
+                _exit(EXIT_FAILURE);
             }
         }
 
@@ -129,20 +144,17 @@ pid_t flush_command_execute(command_t cmd) {
         if (is_background) {
             printf("flush: running %s with PID %d in background\n", cmd.name,
                    pid);
-            exec_result = pid;
+            return pid;
         } else {
             int cmd_status = 0;
             waitpid(pid, &cmd_status, 0);
             char *color = cmd_status == 0 ? FLUSH_GREEN : FLUSH_RED;
-            printf("%sExit status [%s] = %d%s\n", color, cmd.name,
+            printf("%sExit status (%s) = %d%s\n", color, cmd.name,
                    WEXITSTATUS(cmd_status), FLUSH_WHITE);
 
-            exec_result = cmd_status == 0 ? 0 : -1;
+            return cmd_status == 0 ? 0 : -1;
         }
     }
 
-    // Destroy the arguments vector
-    gvec_str_destroy(&cmd.arguments);
-
-    return exec_result;
+    return 0;
 }

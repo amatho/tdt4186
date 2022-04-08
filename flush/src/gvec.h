@@ -1,5 +1,5 @@
-#ifndef __GVEC_H
-#define __GVEC_H
+#ifndef _GVEC_H
+#define _GVEC_H
 
 #include <stdlib.h>
 
@@ -23,5 +23,7 @@
 // Generate generic vector declarations, specifying types and names
 // NOTE: Matching implementations must be generated in the header!
 GEN_VEC_HEADER(char *, str);
+GEN_VEC_HEADER(gvec_str_t, strvec);
+GEN_VEC_HEADER(int, int);
 
 #endif
