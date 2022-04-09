@@ -10,11 +10,11 @@
 #include <unistd.h>
 
 typedef enum {
-    TOKEN_NONE,
-    TOKEN_IDENT,
-    TOKEN_DQUOTE,
-    TOKEN_SQUOTE,
-} tokentype_t;
+    FIND_TOKEN_START,
+    PARSE_IDENT,
+    PARSE_DOUBLE_QUOTE,
+    PARSE_SINGLE_QUOTE,
+} parser_state_t;
 
 void flush_print_command_line(char *cmdline) {
     printf("%s", cmdline);
@@ -31,48 +31,80 @@ command_t flush_command_parse(char *str) {
     gvec_char_t cmdline = {0};
     gvec_char_init(&cmdline, 32);
 
-    size_t token_start = 0;
-    tokentype_t token_type = TOKEN_NONE;
-    size_t str_buf_len = strlen(str) + 1;
-    for (size_t i = 0; i < str_buf_len; i++) {
+    // Parse the command using a simple state machine
+    parser_state_t parser_state = FIND_TOKEN_START;
+    size_t str_len = strlen(str);
+    for (size_t i = 0; i < str_len; i++) {
         char curr = str[i];
 
-        if (token_type == TOKEN_NONE) {
-            if (curr == '\0') {
+        switch (parser_state) {
+        case FIND_TOKEN_START:
+            if (curr == ' ' || curr == '\t') {
+                // Ignore whitespace
                 break;
             } else if (curr == '"') {
-                token_start = i + 1;
-                token_type = TOKEN_DQUOTE;
+                parser_state = PARSE_DOUBLE_QUOTE;
+                break;
             } else if (curr == '\'') {
-                token_start = i + 1;
-                token_type = TOKEN_SQUOTE;
-            } else if (curr != ' ' && curr != '\t') {
-                token_start = i;
-                token_type = TOKEN_IDENT;
-            } else if (curr == '\\') {
-                continue;
-            }
-        } else if ((token_type == TOKEN_DQUOTE || token_type == TOKEN_SQUOTE) &&
-                   curr == '\\') {
-            continue;
-        } else if ((token_type == TOKEN_DQUOTE && curr == '"') ||
-                   (token_type == TOKEN_SQUOTE && curr == '\'') ||
-                   (token_type == TOKEN_IDENT &&
-                    (curr == ' ' || curr == '\t' || curr == '\0'))) {
-            for (size_t j = token_start; j < i; j++) {
-                gvec_char_push(&cmdline, str[j]);
+                parser_state = PARSE_SINGLE_QUOTE;
+                break;
             }
 
-            gvec_char_push(&cmdline, '\0');
-            cmd.argc++;
-            token_type = TOKEN_NONE;
+            // Everything other than whitespace and quotes is recognized as an
+            // identifier
+            gvec_char_push(&cmdline, curr);
+            parser_state = PARSE_IDENT;
+            break;
+
+        case PARSE_IDENT:
+            if (curr == ' ' || curr == '\t') {
+                // End of identifier
+                gvec_char_push(&cmdline, '\0');
+                cmd.argc++;
+                parser_state = FIND_TOKEN_START;
+                break;
+            }
+
+            gvec_char_push(&cmdline, curr);
+            break;
+
+        case PARSE_DOUBLE_QUOTE:
+            if (curr == '"') {
+                // End of double quote
+                gvec_char_push(&cmdline, '\0');
+                cmd.argc++;
+                parser_state = FIND_TOKEN_START;
+                break;
+            }
+
+            gvec_char_push(&cmdline, curr);
+            break;
+
+        case PARSE_SINGLE_QUOTE:
+            if (curr == '\'') {
+                // End of single quote
+                gvec_char_push(&cmdline, '\0');
+                cmd.argc++;
+                parser_state = FIND_TOKEN_START;
+                break;
+            }
+
+            gvec_char_push(&cmdline, curr);
+            break;
         }
     }
 
-    if (token_type != TOKEN_NONE) {
+    switch (parser_state) {
+    case PARSE_DOUBLE_QUOTE:
+    case PARSE_SINGLE_QUOTE:
         fprintf(stderr,
                 "flush: %swarning: multi-line quotes are not supported%s\n",
                 FLUSH_RED, FLUSH_WHITE);
+    case PARSE_IDENT:
+        gvec_char_push(&cmdline, '\0');
+        cmd.argc++;
+    case FIND_TOKEN_START:
+        break;
     }
 
     if (cmd.argc > 0) {
