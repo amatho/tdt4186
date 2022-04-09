@@ -10,23 +10,24 @@
 int main(void) {
     char *cwd = getcwd(NULL, 0);
     int last_cmd_res = 0;
-    gvec_int_t background_procs = {0};
-    gvec_strvec_t proc_cmdlines = {0};
-    gvec_int_init(&background_procs, 8);
-    gvec_strvec_init(&proc_cmdlines, 8);
+    gvec_int_t procs = {0};
+    gvec_str_t proc_cmdlines = {0};
+    gvec_int_init(&procs, 8);
+    gvec_str_init(&proc_cmdlines, 8);
 
     while (1) {
-        for (size_t i = 0; i < background_procs.len; i++) {
-            pid_t proc = background_procs.buf[i];
+        for (size_t i = 0; i < procs.len; i++) {
+            pid_t proc = procs.buf[i];
             int proc_status = 0;
             if (waitpid(proc, &proc_status, WNOHANG) > 0) {
                 char *color = proc_status == 0 ? FLUSH_GREEN : FLUSH_RED;
-                gvec_str_t cmdline = proc_cmdlines.buf[i];
-                printf("%s[%d] Exit status (%s", color, proc, cmdline.buf[0]);
-                for (size_t j = 1; j < cmdline.len; j++) {
-                    printf(" %s", cmdline.buf[j]);
-                }
+                printf("%s[%d] Exit status (", color, proc);
+                flush_print_command_line(proc_cmdlines.buf[i]);
                 printf(") = %d%s\n", WEXITSTATUS(proc_status), FLUSH_WHITE);
+
+                gvec_int_remove(&procs, i);
+                gvec_str_remove(&proc_cmdlines, i);
+                i--;
             }
         }
 
@@ -46,36 +47,25 @@ int main(void) {
             break;
         }
 
-        char *newline = strchr(input, '\n');
-        if (newline != NULL) {
-            *newline = '\0';
-        }
-
         if (input[num_read - 1] == '\n') {
             input[num_read - 1] = '\0';
         }
 
         command_t cmd = flush_command_parse(input);
 
-        last_cmd_res = flush_command_execute(cmd, &background_procs,
-        &proc_cmdlines);
+        last_cmd_res = flush_command_execute(cmd, &procs, &proc_cmdlines);
 
         if (cmd.is_background) {
-            gvec_int_push(&background_procs, last_cmd_res);
+            gvec_int_push(&procs, last_cmd_res);
 
-            gvec_str_t cmdline = {0};
-            gvec_str_init(&cmdline, 4);
-            for (size_t i = 0; cmd.arguments.buf[i] != NULL; i++) {
-                char *arg = cmd.arguments.buf[i];
-                char *arg_copy = malloc(strlen(arg) + 1);
-                strcpy(arg_copy, arg);
-                gvec_str_push(&cmdline, arg_copy);
-            }
-            gvec_strvec_push(&proc_cmdlines, cmdline);
+            size_t buflen = cmd.cmdline.len;
+            char *cmdline_copy = malloc(buflen);
+            memcpy(cmdline_copy, cmd.cmdline.buf, buflen);
+            gvec_str_push(&proc_cmdlines, cmdline_copy);
         }
 
-        // Destroy the arguments vector
-        gvec_str_destroy(&cmd.arguments);
+        // Destroy the command line vector
+        gvec_char_destroy(&cmd.cmdline);
     }
 
     free(cwd);

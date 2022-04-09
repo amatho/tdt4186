@@ -1,3 +1,5 @@
+// Flush terminal colors
+
 #ifndef _COLORS_H
 #define _COLORS_H
 
