@@ -100,6 +100,7 @@ command_t flush_command_parse(char *str) {
         fprintf(stderr,
                 "flush: %swarning: multi-line quotes are not supported%s\n",
                 FLUSH_RED, FLUSH_WHITE);
+        // Fall through
     case PARSE_IDENT:
         gvec_char_push(&cmdline, '\0');
         cmd.argc++;
