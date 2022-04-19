@@ -22,9 +22,9 @@ int main(void) {
             int proc_status = 0;
             if (waitpid(proc, &proc_status, WNOHANG) > 0) {
                 char *color = proc_status == 0 ? FLUSH_GREEN : FLUSH_RED;
-                printf("%s[%d] Exit status (", color, proc);
-                flush_print_command_line(proc_cmdlines.buf[i]);
-                printf(") = %d%s\n", WEXITSTATUS(proc_status), FLUSH_WHITE);
+                printf("%s[%d] Exit status (%s) = %d%s\n", color, proc,
+                       proc_cmdlines.buf[i], WEXITSTATUS(proc_status),
+                       FLUSH_WHITE);
 
                 gvec_int_remove(&procs, i);
                 gvec_str_remove(&proc_cmdlines, i);
@@ -58,15 +58,8 @@ int main(void) {
 
         if (cmd.is_background) {
             gvec_int_push(&procs, last_cmd_res);
-
-            size_t buflen = cmd.cmdline.len;
-            char *cmdline_copy = malloc(buflen);
-            memcpy(cmdline_copy, cmd.cmdline.buf, buflen);
-            gvec_str_push(&proc_cmdlines, cmdline_copy);
+            gvec_str_push(&proc_cmdlines, strdup(cmd.cmdline));
         }
-
-        // Destroy the command line vector
-        gvec_char_destroy(&cmd.cmdline);
     }
 
     free(cwd);
